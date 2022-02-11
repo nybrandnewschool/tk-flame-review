@@ -120,6 +120,8 @@ class ContextSelectorDialog(QtGui.QDialog):
         self.exit_code = QtGui.QDialog.Rejected
         self.submit_button.clicked.connect(self.accept)
         self.cancel_button.clicked.connect(self.reject)
+        self.submit_button.clicked.connect(self._task_manager.shut_down)
+        self.cancel_button.clicked.connect(self._task_manager.shut_down)
         self.entity_selector.entity_activated.connect(self._on_entity_changed)
         self.template_selector.entity_activated.connect(self._on_template_changed)
         self.parent_selector.entity_activated.connect(self._on_parent_changed)
@@ -135,7 +137,7 @@ class ContextSelectorDialog(QtGui.QDialog):
 
     def closeEvent(self, event):
         self._task_manager.shut_down()
-        return event.accept()
+        event.accept()
 
     @property
     def default_template(self):
