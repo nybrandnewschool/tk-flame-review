@@ -18,6 +18,7 @@ import uuid
 
 from sgtk import TankError
 from sgtk.platform import Application
+from sgtk.platform.qt import QtGui
 
 
 class FlameReview(Application):
@@ -225,70 +226,36 @@ class FlameReview(Application):
         # now typically quicktimes are generates as background jobs.
         # in that case, make sure our background job that we are submitting
         # to backburner gets executed *after* the quicktime generation has completed!
-        if info.get("isBackground"):
-            dependencies = info.get("backgroundJobId")
-        else:
-            dependencies = None
+        dependencies = info.get("backgroundJobId")
 
-        # ensure that the entity exists in ShotGrid
-        entity_name = info["sequenceName"]
-        entity_type = self.get_setting("shotgun_entity_type")
-
-        sg_data = self.shotgun.find_one(
-            entity_type,
-            [["code", "is", entity_name], ["project", "is", self.context.project]],
+        # Attempt to find an entity matching info['sequenceName']
+        entity = self.execute_hook_method(
+            "context_selector_hook", 
+            "find_entity",
+            info=info,
         )
 
-        thumbnail_entities = []
+        # If not entity is found matching info['sequenceName']
+        # run the context_selector_hook.new_entity
+        if not entity:
+            entity = self.execute_hook_method(
+                "context_selector_hook", 
+                "new_entity",
+                info=info,
+            )
+
+            # If new_entity returned None assume the user has decided to skip SG Upload.
+            if not entity:
+                return
+
+        thumbnail_entities = [entity]
 
         try:
-            if not sg_data:
-                self.engine.show_busy(
-                    "Updating ShotGrid...",
-                    "Creating %s %s" % (entity_type, entity_name),
-                )
-                # Create a new item in ShotGrid
-                # First see if we should assign a task template
-                # this is controlled via the app settings
-                # if no task template is specified in the settings,
-                # the item will be created without tasks.
-                self.log_debug("Creating a new item in ShotGrid...")
-                task_template_name = self.get_setting("task_template")
-                task_template = None
-                if task_template_name:
-                    task_template = self.shotgun.find_one(
-                        "TaskTemplate", [["code", "is", task_template_name]]
-                    )
-                    if not task_template:
-                        raise TankError(
-                            "The task template '%s' specified in the task_template setting "
-                            "does not exist!" % task_template_name
-                        )
-
-                sg_data = self.shotgun.create(
-                    entity_type,
-                    {
-                        "code": entity_name,
-                        "description": "Created by the ShotGrid Flame integration.",
-                        "task_template": task_template,
-                        "project": self.context.project,
-                    },
-                )
-
-                self.log_debug("Created %s" % sg_data)
-
-                thumbnail_entities.append(
-                    {"type": sg_data["type"], "id": sg_data["id"]}
-                )
-
             # now start the version creation process
-            self.log_debug("Will associate upload with ShotGrid entity %s..." % sg_data)
+            self.log_debug("Will associate upload with ShotGrid entity %s..." % entity)
 
             # create a version in ShotGrid
-            if info["versionNumber"] != 0:
-                title = "%s v%03d" % (info["sequenceName"], info["versionNumber"])
-            else:
-                title = info["sequenceName"]
+            title = info["sequenceName"]
 
             self.engine.show_busy(
                 "Updating ShotGrid...", "Creating Version %s" % (title)
@@ -298,7 +265,7 @@ class FlameReview(Application):
             data["code"] = title
             data["description"] = self._review_comments
             data["project"] = self.context.project
-            data["entity"] = sg_data
+            data["entity"] = entity
             data["created_by"] = self.context.user
             data["user"] = self.context.user
 
