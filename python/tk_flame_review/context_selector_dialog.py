@@ -76,7 +76,7 @@ class ContextSelectorDialog(QtGui.QDialog):
 
         self.template_selector = shotgun_search_widget.GlobalSearchWidget(self)
         self.template_selector.set_searchable_entity_types({
-            'TaskTemplates': [['entity_type', 'is', self.default_entity_type]],
+            'TaskTemplate': [['entity_type', 'is', self.default_entity_type]],
         })
         self.template_selector.set_bg_task_manager(self._task_manager)
         self.template_selector.completer().entity_activated.disconnect(self.template_selector.clear)
