@@ -26,3 +26,9 @@ Don't hesitate to contact us! You can find us on https://developer.shotgridsoftw
 - If a match is not found, a dialog is shown to allow users to select or create an Entity to upload to.
 
 This enables flame artists to Duplicate a sequence and add a version name onto the end, without resulting in tk-flame-review creating a new Sequence in ShotGrid every time. Instead, the media will be uploaded as a Version for the original Sequence.
+
+<p float="left">
+  <img src="/resources/context_selector_Select.png" width="260" />
+  <img src="/resources/context_selector_NewSequence.png" width="260" /> 
+  <img src="/resources/context_selector_NewShot.png" width="260" />
+</p>
