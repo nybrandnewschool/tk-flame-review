@@ -432,7 +432,7 @@ class FlameReview(Application):
                      - presetPath: Path to the preset used for the export.
 
         """
-        # pop up a UI asking the user for description
+        # pop up a UI showing summary
         tk_flame_review = self.import_module("tk_flame_review")
         self.engine.show_modal(
             "Submission Summary",
@@ -440,3 +440,72 @@ class FlameReview(Application):
             tk_flame_review.SummaryDialog,
             self._submission_done,
         )
+
+    def request_upload_context(self, message, defaults=None):
+        """
+        Shows a dialog allowing a user to select a context.
+
+        Arguments:
+            message (str): A message to display at the top of the Dialog.
+            defaults (dict): Default options for dialog.
+
+        Defaults Schema:
+            entity (dict): Entity dict with type, id, and code fields.
+            mode (int): 0 - Select, 1 - New
+            entity_name (str): Name of Entity.
+            entity_type (str): Type of Entity.
+            task_template (str): Name of TaskTemplate to use in creation mode.
+
+        Returns:
+            ShotGrid Entity dict.
+        """
+
+        tk_flame_review = self.import_module("tk_flame_review")
+        dialog = tk_flame_review.ContextSelectorDialog(
+            app=self,
+            message=message,
+            defaults=defaults,
+            parent=self.engine._get_dialog_parent(),
+        )
+        return_code = dialog.exec_()
+        if return_code == QtGui.QDialog.Rejected:
+            return
+
+        options = dialog.get_options()
+
+        if options['mode'] == dialog.New:
+            # Check if entity already exists
+            entity = self.shotgun.find_one(
+                options['entity_type'],
+                [['code', 'is', options['entity_name']], ['project', 'is', self.context.project]],
+                ['code'],
+            )
+            if entity:
+                self.log_debug('Found existing entity %s...' % entity)
+                return entity
+
+            # Create it if it doesn't
+            data = {
+                "code": options['entity_name'],
+                "description": "Created by the ShotGrid Flame integration.",
+                "task_template": options['task_template'],
+                "project": self.context.project,
+            }
+
+            # Set parent using entity_parent_fields setting.
+            parent_field_info = self.get_setting('entity_parent_fields').get(options['entity_type'])
+            if parent_field_info and options['parent']:
+                data[parent_field_info['field']] = options['parent']
+
+            self.log_debug('Creating entity with data %s' % data)
+            entity = self.shotgun.create(
+                options['entity_type'],
+                data,
+                ['code'],
+            )
+            self.log_debug('Created entity %s...' % entity)
+            return entity
+
+        if options['entity']:
+            self.log_debug('Existing entity selected %s...' % options['entity'])
+            return options['entity']
