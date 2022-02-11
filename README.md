@@ -18,7 +18,7 @@ click here: https://developer.shotgridsoftware.com/.
 Don't hesitate to contact us! You can find us on https://developer.shotgridsoftware.com/
 
 
-### Changes in this fork.
+## Changes in this fork.
 
 - Extracted behavior determining which Entity media should be uploaded to into a hook.
 - Configurable through the context_selector_hook and entity_parent_fields settings.
