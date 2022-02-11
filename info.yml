@@ -28,6 +28,21 @@ configuration:
         description: The ShotGrid task template to assign to new ShotGrid entities or blank if none.
         default_value: ""
 
+    entity_parent_fields:
+        type: dict
+        description: Entity, parent field key value pairs. Each key is an Entity type and the value is
+                     the field on the Entity that is linked to it's parent Entity.
+        values:
+            type: dict
+            field:
+                type: str
+                description: Name of ShotGrid field.
+            entity_type:
+                type: str
+                description: Entity type the field refers to.
+        default_value:
+            Shot: {'field': 'sg_sequence', 'entity_type': 'Sequence'}
+
     bypass_shotgun_transcoding:
         description: Try to bypass the ShotGrid server side transcoding if possible. This will only generate
                      and upload a h264 quicktime and not a webm, meaning that playback will not be
@@ -50,6 +65,10 @@ configuration:
         description: Contains logic to generate settings and presets for the Flame export profile
                      used to generate the output.
 
+    context_selector_hook:
+        type: hook
+        default_value: "{self}/context_selector.py"
+        description: Used to determine the ShotGrid entity for Upload.
 
 
 # this app works in all engines - it does not contain
@@ -70,3 +89,5 @@ requires_engine_version: "v1.14.3"
 
 # the frameworks required to run this app
 frameworks:
+  - {"name": "tk-framework-qtwidgets", "version": "v2.x.x", "minimum_version": "v2.8.0"}
+  - {"name": "tk-framework-shotgunutils", "version": "v5.x.x", "minimum_version": "v5.7.0"}
