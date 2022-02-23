@@ -10,4 +10,4 @@
 
 from .submit_dialog import SubmitDialog
 from .summary_dialog import SummaryDialog
-from .context_selector_dialog import ContextSelectorDialog
+from .extended_submit_dialog import ExtendedSubmitDialog

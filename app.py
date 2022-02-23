@@ -42,6 +42,8 @@ class FlameReview(Application):
 
         # flag to indicate that something was actually submitted
         self._submission_done = False
+        self._submit_options = None
+        self._submit_entity = None
 
         # set up callbacks for the engine to trigger
         # when this profile is being triggered
@@ -78,29 +80,25 @@ class FlameReview(Application):
         # clear our flags
         self._submission_done = False
 
-        # pop up a UI asking the user for description
-        tk_flame_review = self.import_module("tk_flame_review")
-        (return_code, widget) = self.engine.show_modal(
-            "Submit for Review", self, tk_flame_review.SubmitDialog
+        options = self.request_submit_options(
+            message='Upload selected to ShotGrid for review.<br>',
+            defaults={'mode': 0},
         )
 
-        if return_code == QtGui.QDialog.Rejected:
+        if not options:
             # user pressed cancel
             info["abort"] = True
             info["abortMessage"] = "User cancelled the operation."
-
         else:
             # get comments from user
-            self._review_comments = widget.get_comments()
+            self._review_comments = options['comment']
 
             # populate the host to use for the export. Currently hard coded to local
             info["destinationHost"] = self.engine.get_server_hostname()
             # set the (temp) location where media is being output prior to upload.
             info["destinationPath"] = self.engine.get_backburner_tmp()
             # pick up the xml export profile from the configuration
-            info["presetPath"] = self.execute_hook_method(
-                "settings_hook", "get_export_preset"
-            )
+            info["presetPath"] = self.execute_hook_method("settings_hook", "get_export_preset")
             # Is the movie generation for the preview foreground or background
             info["isBackground"] = self.get_setting("background_export")
 
@@ -229,24 +227,7 @@ class FlameReview(Application):
         dependencies = info.get("backgroundJobId")
 
         # Attempt to find an entity matching info['sequenceName']
-        entity = self.execute_hook_method(
-            "context_selector_hook", 
-            "find_entity",
-            info=info,
-        )
-
-        # If not entity is found matching info['sequenceName']
-        # run the context_selector_hook.new_entity
-        if not entity:
-            entity = self.execute_hook_method(
-                "context_selector_hook", 
-                "new_entity",
-                info=info,
-            )
-
-            # If new_entity returned None assume the user has decided to skip SG Upload.
-            if not entity:
-                return
+        entity = self._submit_entity
 
         thumbnail_entities = [entity]
 
@@ -408,9 +389,11 @@ class FlameReview(Application):
             self._submission_done,
         )
 
-    def request_upload_context(self, message, defaults=None):
+    def request_submit_options(self, message, defaults=None):
         """
-        Shows a dialog allowing a user to select a context.
+        Shows the ExtendedSubmitDialog with options for Selecting the Sequence to
+        upload to, as well as options for choosing a Shot Task Template, Comment, and
+        Export Preset.
 
         Arguments:
             message (str): A message to display at the top of the Dialog.
@@ -422,23 +405,27 @@ class FlameReview(Application):
             entity_name (str): Name of Entity.
             entity_type (str): Type of Entity.
             task_template (str): Name of TaskTemplate to use in creation mode.
+            shot_task_template (str): Name of TaskTemplate to use when creating Shots.
+            presets (list): List of export presets to choose from.
+            preset (str): Default export preset in presets list.
 
         Returns:
             ShotGrid Entity dict.
         """
 
         tk_flame_review = self.import_module("tk_flame_review")
-        dialog = tk_flame_review.ContextSelectorDialog(
+        dialog = tk_flame_review.ExtendedSubmitDialog(
             app=self,
             message=message,
             defaults=defaults,
             parent=self.engine._get_dialog_parent(),
         )
         return_code = dialog.exec_()
-        if return_code == QtGui.QDialog.Rejected:
+        if return_code == dialog.Rejected:
             return
 
         options = dialog.get_options()
+        self._submit_options = options
 
         if options['mode'] == dialog.New:
             # Check if entity already exists
@@ -449,7 +436,8 @@ class FlameReview(Application):
             )
             if entity:
                 self.log_debug('Found existing entity %s...' % entity)
-                return entity
+                self._submit_entity = entity
+                return options
 
             # Create it if it doesn't
             data = {
@@ -471,8 +459,10 @@ class FlameReview(Application):
                 ['code'],
             )
             self.log_debug('Created entity %s...' % entity)
-            return entity
+            self._submit_entity = entity
+            return options
 
         if options['entity']:
             self.log_debug('Existing entity selected %s...' % options['entity'])
-            return options['entity']
+            self._submit_entity = options['entity']
+            return options
