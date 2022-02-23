@@ -65,11 +65,6 @@ configuration:
         description: Contains logic to generate settings and presets for the Flame export profile
                      used to generate the output.
 
-    context_selector_hook:
-        type: hook
-        default_value: "{self}/context_selector.py"
-        description: Used to determine the ShotGrid entity for Upload.
-
 
 # this app works in all engines - it does not contain
 # any host application specific commands
