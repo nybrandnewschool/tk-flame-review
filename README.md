@@ -20,15 +20,9 @@ Don't hesitate to contact us! You can find us on https://developer.shotgridsoftw
 
 ## Changes in this fork.
 
-- Extracted behavior determining which Entity media should be uploaded to into a hook.
-- Configurable through the context_selector_hook and entity_parent_fields settings.
-- The default context_selector_hook strips version numbers off the ends of sequences and tries to match the name against the shotgun_entity_type setting as well as Sequence and Shot entities.
-- If a match is not found, a dialog is shown to allow users to select or create an Entity to upload to.
-
-This enables flame artists to Duplicate a sequence and add a version name onto the end, without resulting in tk-flame-review creating a new Sequence in ShotGrid every time. Instead, the media will be uploaded as a Version for the original Sequence.
+- New submit dialog allowing users to _Select_ or _Create_ an Entity in ShotGrid to upload media to.
 
 <p float="left">
-  <img src="/resources/context_selector_Select.png" width="260" />
-  <img src="/resources/context_selector_NewSequence.png" width="260" /> 
-  <img src="/resources/context_selector_NewShot.png" width="260" />
+  <img src="/resources/submit_Select.png" width="400" />
+  <img src="/resources/submit_New.png" width="400" /> 
 </p>
